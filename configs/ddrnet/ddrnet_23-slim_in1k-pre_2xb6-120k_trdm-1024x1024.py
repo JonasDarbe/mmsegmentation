@@ -99,7 +99,7 @@ val_dataloader = dict(
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
-        data_prefix=dict(img_path='images/val', seg_map_path='annotations/val'),
+        data_prefix=dict(img_path='images/val_manual_set', seg_map_path='annotations/val_manual_set'),
         pipeline=test_pipeline))
 test_dataloader = val_dataloader
 
@@ -132,7 +132,7 @@ test_cfg = dict(type='TestLoop')
 default_hooks = dict(
     timer=dict(type='IterTimerHook'),
     # logger=dict(type='LoggerHook', interval=50, log_metric_by_epoch=False),
-    logger=dict(type='NeptuneLoggerHook', interval=10, init_kwargs=dict(project="roadsegmentation/roadsegmentation", api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJlM2RjMzIxMy0wZjMzLTQ1YjgtODY2MS0xNDAzMGM1ZDM0ZDQifQ==")),
+    logger=dict(type='NeptuneLoggerHook', interval=50, init_kwargs=dict(project="roadsegmentation/roadsegmentation", api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJlM2RjMzIxMy0wZjMzLTQ1YjgtODY2MS0xNDAzMGM1ZDM0ZDQifQ==")),
     param_scheduler=dict(type='ParamSchedulerHook'),
     checkpoint=dict(type='CheckpointHook', by_epoch=True, interval=1, save_best='mIoU'),
     sampler_seed=dict(type='DistSamplerSeedHook'),
