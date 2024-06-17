@@ -2,6 +2,8 @@ _base_ = [
     '../_base_/default_runtime.py',
 ]
 
+import os
+
 # The class_weight is borrowed from https://github.com/openseg-group/OCNet.pytorch/issues/14 # noqa
 # Licensed under the MIT License
 class_weight = None
@@ -32,7 +34,7 @@ model = dict(
         in_channels=32 * 4,
         channels=64,
         dropout_ratio=0.,
-        num_classes=1,
+        num_classes=2,
         align_corners=False,
         norm_cfg=norm_cfg,
         loss_decode=[
@@ -57,13 +59,10 @@ model = dict(
 train_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(type='LoadAnnotations'),
-    dict(
-        type='RandomResize',
-        scale=(2048, 2048),
-        ratio_range=(0.5, 2.0),
-        keep_ratio=True),
-    dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.75),
+    dict(type='Resize', scale=crop_size, keep_ratio=True),
+    # dict(type='RandomCrop', crop_size=crop_size, cat_max_ratio=0.1),
     dict(type='RandomFlip', prob=0.5),
+    dict(type='RandomRotate', prob=0.5, pad_val = 255, degree=(-15, 15)),
     dict(type='PhotoMetricDistortion'),
     dict(type='PackSegInputs')
 ]
@@ -86,7 +85,7 @@ train_dataloader = dict(
     batch_size=batch_size,
     num_workers=num_workers,
     persistent_workers=True,
-    sampler=dict(type='InfiniteSampler', shuffle=True),
+    sampler=dict(type='DefaultSampler', shuffle=True),
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -107,7 +106,10 @@ test_dataloader = val_dataloader
 val_evaluator = dict(type='IoUMetric', iou_metrics=['mIoU'])
 test_evaluator = val_evaluator
 
-iters = 120000
+epochs = 50
+dataset_size = len(os.listdir(os.path.join(data_root, 'images/train')))
+epochs_iters = int(dataset_size / batch_size)
+
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0005)
 optim_wrapper = dict(type='OptimWrapper', optimizer=optimizer, clip_grad=None)
@@ -118,21 +120,21 @@ param_scheduler = [
         eta_min=0,
         power=0.9,
         begin=0,
-        end=iters,
-        by_epoch=False)
+        end=epochs,
+        by_epoch=True)
 ]
 
 # training schedule for 120k
-train_cfg = dict(
-    type='IterBasedTrainLoop', max_iters=iters, val_interval=iters // 10)
+train_cfg = dict(by_epoch=True, max_epochs = epochs, val_interval=1)
+
 val_cfg = dict(type='ValLoop')
 test_cfg = dict(type='TestLoop')
 default_hooks = dict(
     timer=dict(type='IterTimerHook'),
-    logger=dict(type='LoggerHook', interval=50, log_metric_by_epoch=False),
+    # logger=dict(type='LoggerHook', interval=50, log_metric_by_epoch=False),
+    logger=dict(type='NeptuneLoggerHook', interval=10, init_kwargs=dict(project="roadsegmentation/roadsegmentation", api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJlM2RjMzIxMy0wZjMzLTQ1YjgtODY2MS0xNDAzMGM1ZDM0ZDQifQ==")),
     param_scheduler=dict(type='ParamSchedulerHook'),
-    checkpoint=dict(
-        type='CheckpointHook', by_epoch=False, interval=iters // 10),
+    checkpoint=dict(type='CheckpointHook', by_epoch=True, interval=1, save_best='mIoU'),
     sampler_seed=dict(type='DistSamplerSeedHook'),
     visualization=dict(type='SegVisualizationHook'))
 
