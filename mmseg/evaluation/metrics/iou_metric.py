@@ -142,6 +142,11 @@ class IoUMetric(BaseMetric):
                 metrics[key] = val
             else:
                 metrics['m' + key] = val
+                
+        for key, values in ret_metrics.items():
+            if values.size == len(class_names):
+                for value, name in zip(values, class_names):
+                    metrics[f'{name}_{key}'] = value
 
         # each class table
         ret_metrics.pop('aAcc', None)

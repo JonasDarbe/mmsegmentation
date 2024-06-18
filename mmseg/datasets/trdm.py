@@ -6,8 +6,8 @@ from .basesegdataset import BaseSegDataset
 @DATASETS.register_module()
 class TRDMDataset(BaseSegDataset):
     METAINFO = dict(
-        classes=('road',),
-        palette=[[0, 192, 64]])
+        classes=('background', 'road',),
+        palette=[None, [144, 238, 144]])
 
     def __init__(self,
                  img_suffix='.jpg',
